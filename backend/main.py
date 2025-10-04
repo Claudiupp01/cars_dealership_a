@@ -1,28 +1,47 @@
-# main.py
-from fastapi import FastAPI, HTTPException
+# backend/main.py
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from typing import List
+import models
+from database import engine, get_db, Base
 from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
 
-app = FastAPI(title="Elite Motors API")
+# Create all database tables
+# This reads models.py and creates tables in PostgreSQL
+Base.metadata.create_all(bind=engine)
 
-# Enable CORS so your React frontend can connect
+# Create FastAPI app
+app = FastAPI(title="Elite Motors API", version="1.0.0")
+
+# Enable CORS (allows React to connect from different port)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React dev server
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Data Models
+# Pydantic models for request/response validation
 class CarSpecs(BaseModel):
     engine: str
     transmission: str
     fuel: str
 
-class Car(BaseModel):
+class CarCreate(BaseModel):
+    """Schema for creating a new car"""
+    name: str
+    price: int
+    year: int
+    mileage: int
+    image: str
+    featured: bool = False
+    description: str
+    specs: CarSpecs
+
+class CarResponse(BaseModel):
+    """Schema for car response"""
     id: int
     name: str
     price: int
@@ -33,139 +52,181 @@ class Car(BaseModel):
     description: str
     specs: CarSpecs
 
-class ContactMessage(BaseModel):
-    name: str
-    email: str
-    phone: Optional[str] = None
-    message: str
+    class Config:
+        from_attributes = True
 
-# Mock database - replace with real database later
-cars_db = [
-    {
-        "id": 1,
-        "name": "Mercedes-Benz S-Class",
-        "price": 95000,
-        "year": 2023,
-        "mileage": 5000,
-        "image": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&h=600&fit=crop",
-        "featured": True,
-        "description": "Luxury sedan with cutting-edge technology and comfort",
-        "specs": {"engine": "3.0L V6", "transmission": "Automatic", "fuel": "Gasoline"}
-    },
-    {
-        "id": 2,
-        "name": "BMW M4 Competition",
-        "price": 78000,
-        "year": 2023,
-        "mileage": 3000,
-        "image": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop",
-        "featured": True,
-        "description": "High-performance sports coupe with racing DNA",
-        "specs": {"engine": "3.0L Twin-Turbo I6", "transmission": "Automatic", "fuel": "Gasoline"}
-    },
-    {
-        "id": 3,
-        "name": "Audi e-tron GT",
-        "price": 105000,
-        "year": 2023,
-        "mileage": 2000,
-        "image": "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800&h=600&fit=crop",
-        "featured": False,
-        "description": "Electric gran turismo combining performance and sustainability",
-        "specs": {"engine": "Electric", "transmission": "Automatic", "fuel": "Electric"}
-    },
-    {
-        "id": 4,
-        "name": "Porsche 911 Carrera",
-        "price": 115000,
-        "year": 2023,
-        "mileage": 4000,
-        "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&h=600&fit=crop",
-        "featured": True,
-        "description": "Iconic sports car with timeless design",
-        "specs": {"engine": "3.0L Twin-Turbo Flat-6", "transmission": "PDK", "fuel": "Gasoline"}
-    },
-    {
-        "id": 5,
-        "name": "Tesla Model S Plaid",
-        "price": 89000,
-        "year": 2023,
-        "mileage": 6000,
-        "image": "https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&h=600&fit=crop",
-        "featured": False,
-        "description": "Fastest accelerating production car with autopilot",
-        "specs": {"engine": "Electric Tri-Motor", "transmission": "Single-Speed", "fuel": "Electric"}
-    },
-    {
-        "id": 6,
-        "name": "Range Rover Sport",
-        "price": 92000,
-        "year": 2023,
-        "mileage": 7000,
-        "image": "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&h=600&fit=crop",
-        "featured": False,
-        "description": "Luxury SUV with exceptional off-road capability",
-        "specs": {"engine": "3.0L Supercharged V6", "transmission": "Automatic", "fuel": "Gasoline"}
-    }
-]
-
-# API Endpoints
+# ============= API ENDPOINTS =============
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to Elite Motors API", "version": "1.0"}
-
-@app.get("/api/cars", response_model=List[Car])
-def get_all_cars():
-    """Get all cars in inventory"""
-    return cars_db
-
-@app.get("/api/cars/featured", response_model=List[Car])
-def get_featured_cars():
-    """Get only featured cars"""
-    return [car for car in cars_db if car["featured"]]
-
-@app.get("/api/cars/{car_id}", response_model=Car)
-def get_car_by_id(car_id: int):
-    """Get a specific car by ID"""
-    car = next((car for car in cars_db if car["id"] == car_id), None)
-    if car is None:
-        raise HTTPException(status_code=404, detail="Car not found")
-    return car
-
-@app.post("/api/contact")
-def submit_contact_form(message: ContactMessage):
-    """Submit a contact form message"""
-    # In production, you would save this to a database or send an email
-    print(f"New contact message from {message.name}: {message.message}")
+    """Homepage endpoint"""
     return {
-        "success": True,
-        "message": "Thank you for your message! We'll get back to you soon."
+        "message": "Welcome to Elite Motors API",
+        "version": "1.0.0",
+        "docs": "/docs"
     }
 
-@app.post("/api/cars", response_model=Car)
-def add_car(car: Car):
-    """Add a new car to inventory (admin only in production)"""
-    cars_db.append(car.dict())
-    return car
+@app.get("/api/cars", response_model=List[CarResponse])
+def get_all_cars(db: Session = Depends(get_db)):
+    """
+    Get all cars from database
+    
+    - db: Database session (automatically injected by FastAPI)
+    """
+    cars = db.query(models.Car).all()
+    return [car.to_dict() for car in cars]
 
-@app.put("/api/cars/{car_id}", response_model=Car)
-def update_car(car_id: int, car: Car):
-    """Update an existing car (admin only in production)"""
-    for i, existing_car in enumerate(cars_db):
-        if existing_car["id"] == car_id:
-            cars_db[i] = car.dict()
-            return car
-    raise HTTPException(status_code=404, detail="Car not found")
+@app.get("/api/cars/featured", response_model=List[CarResponse])
+def get_featured_cars(db: Session = Depends(get_db)):
+    """Get only featured cars"""
+    cars = db.query(models.Car).filter(models.Car.featured == True).all()
+    return [car.to_dict() for car in cars]
+
+@app.get("/api/cars/{car_id}", response_model=CarResponse)
+def get_car_by_id(car_id: int, db: Session = Depends(get_db)):
+    """Get a specific car by ID"""
+    car = db.query(models.Car).filter(models.Car.id == car_id).first()
+    if car is None:
+        raise HTTPException(status_code=404, detail="Car not found")
+    return car.to_dict()
+
+@app.post("/api/cars", response_model=CarResponse)
+def create_car(car: CarCreate, db: Session = Depends(get_db)):
+    """
+    Add a new car to the database
+    
+    Example request body:
+    {
+        "name": "BMW M5",
+        "price": 85000,
+        "year": 2023,
+        "mileage": 1000,
+        "image": "https://example.com/image.jpg",
+        "featured": true,
+        "description": "High-performance sedan",
+        "specs": {
+            "engine": "4.4L V8",
+            "transmission": "Automatic",
+            "fuel": "Gasoline"
+        }
+    }
+    """
+    # Create new car object
+    db_car = models.Car(
+        name=car.name,
+        price=car.price,
+        year=car.year,
+        mileage=car.mileage,
+        image=car.image,
+        featured=car.featured,
+        description=car.description,
+        engine=car.specs.engine,
+        transmission=car.specs.transmission,
+        fuel=car.specs.fuel
+    )
+    
+    # Add to database
+    db.add(db_car)
+    db.commit()  # Save changes
+    db.refresh(db_car)  # Get the ID that was auto-generated
+    
+    return db_car.to_dict()
+
+@app.put("/api/cars/{car_id}", response_model=CarResponse)
+def update_car(car_id: int, car: CarCreate, db: Session = Depends(get_db)):
+    """Update an existing car"""
+    db_car = db.query(models.Car).filter(models.Car.id == car_id).first()
+    if db_car is None:
+        raise HTTPException(status_code=404, detail="Car not found")
+    
+    # Update all fields
+    db_car.name = car.name
+    db_car.price = car.price
+    db_car.year = car.year
+    db_car.mileage = car.mileage
+    db_car.image = car.image
+    db_car.featured = car.featured
+    db_car.description = car.description
+    db_car.engine = car.specs.engine
+    db_car.transmission = car.specs.transmission
+    db_car.fuel = car.specs.fuel
+    
+    db.commit()
+    db.refresh(db_car)
+    
+    return db_car.to_dict()
 
 @app.delete("/api/cars/{car_id}")
-def delete_car(car_id: int):
-    """Delete a car from inventory (admin only in production)"""
-    for i, car in enumerate(cars_db):
-        if car["id"] == car_id:
-            cars_db.pop(i)
-            return {"success": True, "message": "Car deleted successfully"}
-    raise HTTPException(status_code=404, detail="Car not found")
+def delete_car(car_id: int, db: Session = Depends(get_db)):
+    """Delete a car from database"""
+    db_car = db.query(models.Car).filter(models.Car.id == car_id).first()
+    if db_car is None:
+        raise HTTPException(status_code=404, detail="Car not found")
+    
+    db.delete(db_car)
+    db.commit()
+    
+    return {"success": True, "message": "Car deleted successfully"}
+
+@app.post("/api/seed")
+def seed_database(db: Session = Depends(get_db)):
+    """
+    Populate database with sample cars
+    Call this once to add initial data
+    """
+    # Check if database already has cars
+    existing_cars = db.query(models.Car).count()
+    if existing_cars > 0:
+        return {"message": "Database already has cars"}
+    
+    # Sample cars to add
+    sample_cars = [
+        {
+            "name": "Mercedes-Benz S-Class",
+            "price": 95000,
+            "year": 2023,
+            "mileage": 5000,
+            "image": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&h=600&fit=crop",
+            "featured": True,
+            "description": "Luxury sedan with cutting-edge technology and comfort",
+            "engine": "3.0L V6",
+            "transmission": "Automatic",
+            "fuel": "Gasoline"
+        },
+        {
+            "name": "BMW M4 Competition",
+            "price": 78000,
+            "year": 2023,
+            "mileage": 3000,
+            "image": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop",
+            "featured": True,
+            "description": "High-performance sports coupe with racing DNA",
+            "engine": "3.0L Twin-Turbo I6",
+            "transmission": "Automatic",
+            "fuel": "Gasoline"
+        },
+        {
+            "name": "Porsche 911 Carrera",
+            "price": 115000,
+            "year": 2023,
+            "mileage": 4000,
+            "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&h=600&fit=crop",
+            "featured": True,
+            "description": "Iconic sports car with timeless design",
+            "engine": "3.0L Twin-Turbo Flat-6",
+            "transmission": "PDK",
+            "fuel": "Gasoline"
+        }
+    ]
+    
+    # Add all sample cars to database
+    for car_data in sample_cars:
+        db_car = models.Car(**car_data)
+        db.add(db_car)
+    
+    db.commit()
+    
+    return {"message": f"Added {len(sample_cars)} cars to database"}
 
 if __name__ == "__main__":
     import uvicorn
