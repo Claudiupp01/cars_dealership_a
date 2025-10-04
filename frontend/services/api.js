@@ -1,10 +1,6 @@
 // frontend/src/services/api.js
-
 const API_BASE_URL = "http://localhost:8000/api";
 
-/**
- * Fetch all cars from the backend
- */
 export const getAllCars = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/cars`);
@@ -16,9 +12,6 @@ export const getAllCars = async () => {
   }
 };
 
-/**
- * Fetch a single car by ID
- */
 export const getCarById = async (id) => {
   try {
     const response = await fetch(`${API_BASE_URL}/cars/${id}`);
@@ -30,9 +23,6 @@ export const getCarById = async (id) => {
   }
 };
 
-/**
- * Fetch only featured cars
- */
 export const getFeaturedCars = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/cars/featured`);
