@@ -1,11 +1,10 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Car } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Car, User, LogOut } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 const Navigation = () => {
-  const location = useLocation();
-
-  const isActive = (path) => location.pathname === path;
+  const { user, logout, isAuthenticated } = useAuth();
 
   return (
     <nav className="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
@@ -15,39 +14,53 @@ const Navigation = () => {
             <Car className="w-8 h-8 text-blue-400" />
             <span className="text-xl font-bold">Elite Motors</span>
           </Link>
-          <div className="flex space-x-8">
-            <Link
-              to="/"
-              className={`hover:text-blue-400 transition ${
-                isActive("/") ? "text-blue-400" : ""
-              }`}
-            >
+
+          <div className="flex items-center space-x-8">
+            <Link to="/" className="hover:text-blue-400 transition">
               Home
             </Link>
-            <Link
-              to="/inventory"
-              className={`hover:text-blue-400 transition ${
-                isActive("/inventory") ? "text-blue-400" : ""
-              }`}
-            >
+            <Link to="/inventory" className="hover:text-blue-400 transition">
               Inventory
             </Link>
-            <Link
-              to="/about"
-              className={`hover:text-blue-400 transition ${
-                isActive("/about") ? "text-blue-400" : ""
-              }`}
-            >
+            <Link to="/about" className="hover:text-blue-400 transition">
               About
             </Link>
-            <Link
-              to="/contact"
-              className={`hover:text-blue-400 transition ${
-                isActive("/contact") ? "text-blue-400" : ""
-              }`}
-            >
+            <Link to="/contact" className="hover:text-blue-400 transition">
               Contact
             </Link>
+
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 text-sm">
+                  <User className="w-4 h-4" />
+                  <span>{user?.username}</span>
+                  {user?.role !== "user" && (
+                    <span className="bg-blue-600 px-2 py-1 rounded text-xs">
+                      {user?.role}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={logout}
+                  className="flex items-center space-x-1 hover:text-blue-400 transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link to="/login" className="hover:text-blue-400 transition">
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
