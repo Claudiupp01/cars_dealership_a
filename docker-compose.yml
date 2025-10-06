@@ -1,4 +1,3 @@
-# docker-compose.yml
 version: "3.8"
 
 services:
@@ -10,14 +9,27 @@ services:
       POSTGRES_PASSWORD: carpass123
       POSTGRES_DB: carsales_db
     ports:
-      - "5433:5432" # Changed from "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d # Auto-run SQL files on first startup
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U caruser -d carsales_db"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Optional: pgAdmin for GUI database management
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: carsales_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@elitemotors.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
 
 volumes:
   postgres_data:

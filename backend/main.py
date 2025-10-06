@@ -158,59 +158,59 @@ def delete_car(car_id: int, db: Session = Depends(get_db)):
     
     return {"success": True, "message": "Car deleted successfully"}
 
-@app.post("/api/seed")
-def seed_database(db: Session = Depends(get_db)):
-    """Populate database with sample cars"""
-    existing_cars = db.query(models.Car).count()
-    if existing_cars > 0:
-        return {"message": f"Database already has {existing_cars} cars"}
+# @app.post("/api/seed")
+# def seed_database(db: Session = Depends(get_db)):
+#     """Populate database with sample cars"""
+#     existing_cars = db.query(models.Car).count()
+#     if existing_cars > 0:
+#         return {"message": f"Database already has {existing_cars} cars"}
     
-    sample_cars = [
-        {
-            "name": "Mercedes-Benz S-Class",
-            "price": 95000,
-            "year": 2023,
-            "mileage": 5000,
-            "image": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&h=600&fit=crop",
-            "featured": True,
-            "description": "Luxury sedan with cutting-edge technology and comfort",
-            "engine": "3.0L V6",
-            "transmission": "Automatic",
-            "fuel": "Gasoline"
-        },
-        {
-            "name": "BMW M4 Competition",
-            "price": 78000,
-            "year": 2023,
-            "mileage": 3000,
-            "image": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop",
-            "featured": True,
-            "description": "High-performance sports coupe with racing DNA",
-            "engine": "3.0L Twin-Turbo I6",
-            "transmission": "Automatic",
-            "fuel": "Gasoline"
-        },
-        {
-            "name": "Porsche 911 Carrera",
-            "price": 115000,
-            "year": 2023,
-            "mileage": 4000,
-            "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&h=600&fit=crop",
-            "featured": True,
-            "description": "Iconic sports car with timeless design",
-            "engine": "3.0L Twin-Turbo Flat-6",
-            "transmission": "PDK",
-            "fuel": "Gasoline"
-        }
-    ]
+#     sample_cars = [
+#         {
+#             "name": "Mercedes-Benz S-Class",
+#             "price": 95000,
+#             "year": 2023,
+#             "mileage": 5000,
+#             "image": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&h=600&fit=crop",
+#             "featured": True,
+#             "description": "Luxury sedan with cutting-edge technology and comfort",
+#             "engine": "3.0L V6",
+#             "transmission": "Automatic",
+#             "fuel": "Gasoline"
+#         },
+#         {
+#             "name": "BMW M4 Competition",
+#             "price": 78000,
+#             "year": 2023,
+#             "mileage": 3000,
+#             "image": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop",
+#             "featured": True,
+#             "description": "High-performance sports coupe with racing DNA",
+#             "engine": "3.0L Twin-Turbo I6",
+#             "transmission": "Automatic",
+#             "fuel": "Gasoline"
+#         },
+#         {
+#             "name": "Porsche 911 Carrera",
+#             "price": 115000,
+#             "year": 2023,
+#             "mileage": 4000,
+#             "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&h=600&fit=crop",
+#             "featured": True,
+#             "description": "Iconic sports car with timeless design",
+#             "engine": "3.0L Twin-Turbo Flat-6",
+#             "transmission": "PDK",
+#             "fuel": "Gasoline"
+#         }
+#     ]
     
-    for car_data in sample_cars:
-        db_car = models.Car(**car_data)
-        db.add(db_car)
+#     for car_data in sample_cars:
+#         db_car = models.Car(**car_data)
+#         db.add(db_car)
     
-    db.commit()
+#     db.commit()
     
-    return {"message": f"Added {len(sample_cars)} cars to database"}
+#     return {"message": f"Added {len(sample_cars)} cars to database"}
 
 if __name__ == "__main__":
     import uvicorn

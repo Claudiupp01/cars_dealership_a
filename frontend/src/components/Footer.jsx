@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Car } from "lucide-react";
 
 const Footer = () => {
@@ -18,18 +19,39 @@ const Footer = () => {
           <div>
             <h3 className="font-bold mb-4">Quick Links</h3>
             <div className="space-y-2 text-slate-400">
-              <div className="hover:text-white cursor-pointer">Home</div>
-              <div className="hover:text-white cursor-pointer">Inventory</div>
-              <div className="hover:text-white cursor-pointer">About</div>
-              <div className="hover:text-white cursor-pointer">Contact</div>
+              <Link to="/" className="block hover:text-white transition">
+                Home
+              </Link>
+              <Link
+                to="/inventory"
+                className="block hover:text-white transition"
+              >
+                Inventory
+              </Link>
+              <Link to="/about" className="block hover:text-white transition">
+                About
+              </Link>
+              <Link to="/contact" className="block hover:text-white transition">
+                Contact
+              </Link>
             </div>
           </div>
           <div>
             <h3 className="font-bold mb-4">Contact Info</h3>
             <div className="space-y-2 text-slate-400">
-              <div>+1 (555) 123-4567</div>
-              <div>sales@elitemotors.com</div>
-              <div>123 Luxury Lane, Beverly Hills</div>
+              <a
+                href="tel:+15551234567"
+                className="block hover:text-white transition"
+              >
+                +1 (555) 123-4567
+              </a>
+              <a
+                href="mailto:sales@elitemotors.com"
+                className="block hover:text-white transition"
+              >
+                sales@elitemotors.com
+              </a>
+              <p>123 Luxury Lane, Beverly Hills</p>
             </div>
           </div>
         </div>
