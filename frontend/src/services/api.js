@@ -1,4 +1,6 @@
 // frontend/src/services/api.js
+import { getToken } from "./auth";
+
 const API_BASE_URL = "http://localhost:8000/api";
 
 export const getAllCars = async () => {
@@ -32,4 +34,65 @@ export const getFeaturedCars = async () => {
     console.error("Error fetching featured cars:", error);
     return [];
   }
+};
+
+export const createCar = async (carData) => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/cars`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(carData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to create car");
+  }
+
+  return await response.json();
+};
+
+export const updateCar = async (id, carData) => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/cars/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(carData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to update car");
+  }
+
+  return await response.json();
+};
+
+export const deleteCar = async (id) => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/cars/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to delete car");
+  }
+
+  return await response.json();
 };

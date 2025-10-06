@@ -60,3 +60,8 @@ SELECT 'owner@elitemotors.com', 'owner', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p9
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'owner@elitemotors.com');
 
 -- Rest of cars table creation...
+
+
+
+
+-- owner: $2b$12$tf3CqNc364JSoHO2UWuquu/ypOvCBXIiByJ1c/pJFN0JpiE8CUNzG
