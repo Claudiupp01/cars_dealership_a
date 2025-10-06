@@ -8,25 +8,29 @@ from database import engine, get_db, Base, test_connection
 from pydantic import BaseModel
 import sys
 
+from fastapi.security import OAuth2PasswordRequestForm
+from datetime import timedelta
+import auth
+
 # Test database connection BEFORE creating tables
 print("=" * 50)
-print("🚀 Starting Elite Motors API...")
+print("Starting Elite Motors API...")
 print("=" * 50)
 
 if not test_connection():
-    print("\n❌ Cannot start server - database connection failed")
-    print("💡 Make sure Docker PostgreSQL is running:")
+    print("\nCannot start server - database connection failed")
+    print("Make sure Docker PostgreSQL is running:")
     print("   docker-compose up -d")
     print("   docker ps")
     sys.exit(1)
 
-# Create all database tables
+# Create all database tables (INCLUDING users table)
 try:
-    print("📊 Creating database tables...")
+    print("Creating database tables...")
     Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created successfully!")
+    print("Database tables created successfully!")
 except Exception as e:
-    print(f"❌ Failed to create tables: {e}")
+    print(f"Failed to create tables: {e}")
     sys.exit(1)
 
 # Create FastAPI app
@@ -40,6 +44,94 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============= AUTHENTICATION ENDPOINTS =============
+
+class UserCreate(BaseModel):
+    email: str
+    username: str
+    password: str
+    full_name: str = None
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    username: str
+    full_name: str
+    role: str
+    is_active: bool
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse
+
+@app.post("/api/auth/register", response_model=UserResponse)
+def register(user_data: UserCreate, db: Session = Depends(get_db)):
+    """Register a new user"""
+    # Check if email already exists
+    if db.query(models.User).filter(models.User.email == user_data.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check if username already exists
+    if db.query(models.User).filter(models.User.username == user_data.username).first():
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Create new user
+    hashed_password = auth.get_password_hash(user_data.password)
+    new_user = models.User(
+        email=user_data.email,
+        username=user_data.username,
+        hashed_password=hashed_password,
+        full_name=user_data.full_name,
+        role='user'  # Changed to string
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return new_user.to_dict()
+
+@app.post("/api/auth/login", response_model=Token)
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    """Login and get JWT token"""
+    # Find user by email or username
+    user = db.query(models.User).filter(
+        (models.User.email == form_data.username) | 
+        (models.User.username == form_data.username)
+    ).first()
+    
+    if not user or not auth.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email/username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(
+        data={"sub": user.email},
+        expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user.to_dict()
+    }
+
+@app.get("/api/auth/me", response_model=UserResponse)
+def get_current_user_info(current_user: models.User = Depends(auth.get_current_active_user)):
+    """Get current logged-in user info"""
+    return current_user.to_dict()
 
 # Pydantic models for request/response validation
 class CarSpecs(BaseModel):
@@ -81,29 +173,13 @@ def read_root():
         "docs": "/docs"
     }
 
-@app.get("/api/cars", response_model=List[CarResponse])
-def get_all_cars(db: Session = Depends(get_db)):
-    """Get all cars from database"""
-    cars = db.query(models.Car).all()
-    return [car.to_dict() for car in cars]
-
-@app.get("/api/cars/featured", response_model=List[CarResponse])
-def get_featured_cars(db: Session = Depends(get_db)):
-    """Get only featured cars"""
-    cars = db.query(models.Car).filter(models.Car.featured == True).all()
-    return [car.to_dict() for car in cars]
-
-@app.get("/api/cars/{car_id}", response_model=CarResponse)
-def get_car_by_id(car_id: int, db: Session = Depends(get_db)):
-    """Get a specific car by ID"""
-    car = db.query(models.Car).filter(models.Car.id == car_id).first()
-    if car is None:
-        raise HTTPException(status_code=404, detail="Car not found")
-    return car.to_dict()
-
 @app.post("/api/cars", response_model=CarResponse)
-def create_car(car: CarCreate, db: Session = Depends(get_db)):
-    """Add a new car to the database"""
+def create_car(
+    car: CarCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_owner)
+):
+    """Add a new car (Owner or Admin only)"""
     db_car = models.Car(
         name=car.name,
         price=car.price,
@@ -123,9 +199,28 @@ def create_car(car: CarCreate, db: Session = Depends(get_db)):
     
     return db_car.to_dict()
 
+@app.get("/api/cars/featured", response_model=List[CarResponse])
+def get_featured_cars(db: Session = Depends(get_db)):
+    """Get only featured cars"""
+    cars = db.query(models.Car).filter(models.Car.featured == True).all()
+    return [car.to_dict() for car in cars]
+
+@app.get("/api/cars/{car_id}", response_model=CarResponse)
+def get_car_by_id(car_id: int, db: Session = Depends(get_db)):
+    """Get a specific car by ID"""
+    car = db.query(models.Car).filter(models.Car.id == car_id).first()
+    if car is None:
+        raise HTTPException(status_code=404, detail="Car not found")
+    return car.to_dict()
+
 @app.put("/api/cars/{car_id}", response_model=CarResponse)
-def update_car(car_id: int, car: CarCreate, db: Session = Depends(get_db)):
-    """Update an existing car"""
+def update_car(
+    car_id: int,
+    car: CarCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_owner)
+):
+    """Update an existing car (Owner or Admin only)"""
     db_car = db.query(models.Car).filter(models.Car.id == car_id).first()
     if db_car is None:
         raise HTTPException(status_code=404, detail="Car not found")
@@ -147,8 +242,12 @@ def update_car(car_id: int, car: CarCreate, db: Session = Depends(get_db)):
     return db_car.to_dict()
 
 @app.delete("/api/cars/{car_id}")
-def delete_car(car_id: int, db: Session = Depends(get_db)):
-    """Delete a car from database"""
+def delete_car(
+    car_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_owner)
+):
+    """Delete a car (Owner or Admin only)"""
     db_car = db.query(models.Car).filter(models.Car.id == car_id).first()
     if db_car is None:
         raise HTTPException(status_code=404, detail="Car not found")
