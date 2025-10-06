@@ -1,0 +1,134 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ChevronRight, Star, Car, Phone } from "lucide-react";
+import { getAllCars } from "../services/api";
+
+const HomePage = () => {
+  const [cars, setCars] = useState([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    getAllCars().then((data) => {
+      setCars(data.filter((car) => car.featured));
+    });
+  }, []);
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+    }).format(price);
+  };
+
+  return (
+    <div>
+      <div className="relative h-96 bg-gradient-to-r from-slate-900 to-slate-700 text-white">
+        <div className="absolute inset-0 bg-black opacity-20"></div>
+        <div className="relative max-w-7xl mx-auto px-4 h-full flex items-center">
+          <div className="max-w-2xl">
+            <h1 className="text-5xl font-bold mb-4">Drive Your Dream</h1>
+            <p className="text-xl mb-8">
+              Discover our curated collection of luxury and performance vehicles
+            </p>
+            <button
+              onClick={() => navigate("/inventory")}
+              className="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg font-semibold transition flex items-center space-x-2"
+            >
+              <span>Browse Inventory</span>
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold text-slate-900 mb-4">
+            Featured Vehicles
+          </h2>
+          <p className="text-slate-600 text-lg">
+            Hand-picked selections from our premium collection
+          </p>
+        </div>
+
+        {cars.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-600 text-lg">Loading cars...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {cars.map((car) => (
+              <div
+                key={car.id}
+                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition cursor-pointer"
+                onClick={() => navigate(`/car/${car.id}`)}
+              >
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={car.image}
+                    alt={car.name}
+                    className="w-full h-full object-cover hover:scale-110 transition duration-500"
+                  />
+                  <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                    Featured
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    {car.name}
+                  </h3>
+                  <p className="text-slate-600 mb-4">{car.description}</p>
+                  <div className="flex justify-between items-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {formatPrice(car.price)}
+                    </div>
+                    <div className="text-sm text-slate-500">
+                      {car.year} · {car.mileage.toLocaleString()} mi
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-slate-100 py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div className="bg-white p-8 rounded-xl shadow">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Star className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Premium Selection</h3>
+              <p className="text-slate-600">
+                Every vehicle carefully inspected and certified
+              </p>
+            </div>
+            <div className="bg-white p-8 rounded-xl shadow">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Car className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Test Drive</h3>
+              <p className="text-slate-600">
+                Experience your dream car before you buy
+              </p>
+            </div>
+            <div className="bg-white p-8 rounded-xl shadow">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Phone className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Expert Support</h3>
+              <p className="text-slate-600">
+                Dedicated team to help you find the perfect match
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default HomePage;
