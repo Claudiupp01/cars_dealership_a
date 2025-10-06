@@ -4,17 +4,35 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 import models
-from database import engine, get_db, Base
+from database import engine, get_db, Base, test_connection
 from pydantic import BaseModel
+import sys
+
+# Test database connection BEFORE creating tables
+print("=" * 50)
+print("🚀 Starting Elite Motors API...")
+print("=" * 50)
+
+if not test_connection():
+    print("\n❌ Cannot start server - database connection failed")
+    print("💡 Make sure Docker PostgreSQL is running:")
+    print("   docker-compose up -d")
+    print("   docker ps")
+    sys.exit(1)
 
 # Create all database tables
-# This reads models.py and creates tables in PostgreSQL
-Base.metadata.create_all(bind=engine)
+try:
+    print("📊 Creating database tables...")
+    Base.metadata.create_all(bind=engine)
+    print("✅ Database tables created successfully!")
+except Exception as e:
+    print(f"❌ Failed to create tables: {e}")
+    sys.exit(1)
 
 # Create FastAPI app
 app = FastAPI(title="Elite Motors API", version="1.0.0")
 
-# Enable CORS (allows React to connect from different port)
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://localhost:5173"],
@@ -30,7 +48,6 @@ class CarSpecs(BaseModel):
     fuel: str
 
 class CarCreate(BaseModel):
-    """Schema for creating a new car"""
     name: str
     price: int
     year: int
@@ -41,7 +58,6 @@ class CarCreate(BaseModel):
     specs: CarSpecs
 
 class CarResponse(BaseModel):
-    """Schema for car response"""
     id: int
     name: str
     price: int
@@ -59,7 +75,6 @@ class CarResponse(BaseModel):
 
 @app.get("/")
 def read_root():
-    """Homepage endpoint"""
     return {
         "message": "Welcome to Elite Motors API",
         "version": "1.0.0",
@@ -68,11 +83,7 @@ def read_root():
 
 @app.get("/api/cars", response_model=List[CarResponse])
 def get_all_cars(db: Session = Depends(get_db)):
-    """
-    Get all cars from database
-    
-    - db: Database session (automatically injected by FastAPI)
-    """
+    """Get all cars from database"""
     cars = db.query(models.Car).all()
     return [car.to_dict() for car in cars]
 
@@ -92,26 +103,7 @@ def get_car_by_id(car_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/cars", response_model=CarResponse)
 def create_car(car: CarCreate, db: Session = Depends(get_db)):
-    """
-    Add a new car to the database
-    
-    Example request body:
-    {
-        "name": "BMW M5",
-        "price": 85000,
-        "year": 2023,
-        "mileage": 1000,
-        "image": "https://example.com/image.jpg",
-        "featured": true,
-        "description": "High-performance sedan",
-        "specs": {
-            "engine": "4.4L V8",
-            "transmission": "Automatic",
-            "fuel": "Gasoline"
-        }
-    }
-    """
-    # Create new car object
+    """Add a new car to the database"""
     db_car = models.Car(
         name=car.name,
         price=car.price,
@@ -125,10 +117,9 @@ def create_car(car: CarCreate, db: Session = Depends(get_db)):
         fuel=car.specs.fuel
     )
     
-    # Add to database
     db.add(db_car)
-    db.commit()  # Save changes
-    db.refresh(db_car)  # Get the ID that was auto-generated
+    db.commit()
+    db.refresh(db_car)
     
     return db_car.to_dict()
 
@@ -139,7 +130,6 @@ def update_car(car_id: int, car: CarCreate, db: Session = Depends(get_db)):
     if db_car is None:
         raise HTTPException(status_code=404, detail="Car not found")
     
-    # Update all fields
     db_car.name = car.name
     db_car.price = car.price
     db_car.year = car.year
@@ -170,16 +160,11 @@ def delete_car(car_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/seed")
 def seed_database(db: Session = Depends(get_db)):
-    """
-    Populate database with sample cars
-    Call this once to add initial data
-    """
-    # Check if database already has cars
+    """Populate database with sample cars"""
     existing_cars = db.query(models.Car).count()
     if existing_cars > 0:
-        return {"message": "Database already has cars"}
+        return {"message": f"Database already has {existing_cars} cars"}
     
-    # Sample cars to add
     sample_cars = [
         {
             "name": "Mercedes-Benz S-Class",
@@ -219,7 +204,6 @@ def seed_database(db: Session = Depends(get_db)):
         }
     ]
     
-    # Add all sample cars to database
     for car_data in sample_cars:
         db_car = models.Car(**car_data)
         db.add(db_car)
@@ -230,4 +214,8 @@ def seed_database(db: Session = Depends(get_db)):
 
 if __name__ == "__main__":
     import uvicorn
+    print("\n" + "=" * 50)
+    print("🚀 Starting server on http://localhost:8000")
+    print("📚 API Docs: http://localhost:8000/docs")
+    print("=" * 50 + "\n")
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,0 +1,23 @@
+# docker-compose.yml
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: carsales_postgres
+    environment:
+      POSTGRES_USER: caruser
+      POSTGRES_PASSWORD: carpass123
+      POSTGRES_DB: carsales_db
+    ports:
+      - "5433:5432" # Changed from "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U caruser -d carsales_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
