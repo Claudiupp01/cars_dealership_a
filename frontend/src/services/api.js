@@ -154,3 +154,108 @@ export const deleteUser = async (userId) => {
 
   return await response.json();
 };
+
+// Favorites
+export const getFavorites = async () => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/user/favorites`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) throw new Error("Failed to fetch favorites");
+  return await response.json();
+};
+
+export const addFavorite = async (carId) => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/user/favorites`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ car_id: carId }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to add favorite");
+  }
+
+  return await response.json();
+};
+
+export const removeFavorite = async (carId) => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/user/favorites/${carId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) throw new Error("Failed to remove favorite");
+  return await response.json();
+};
+
+// Test Drives
+export const getTestDrives = async () => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/user/test-drives`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) throw new Error("Failed to fetch test drives");
+  return await response.json();
+};
+
+export const requestTestDrive = async (testDriveData) => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/user/test-drives`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(testDriveData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to request test drive");
+  }
+
+  return await response.json();
+};
+
+// Contact
+export const submitContactInquiry = async (inquiryData) => {
+  const response = await fetch(`${API_BASE_URL}/contact`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(inquiryData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to submit inquiry");
+  }
+
+  return await response.json();
+};

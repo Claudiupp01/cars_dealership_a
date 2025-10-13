@@ -1,3 +1,4 @@
+// frontend/src/components/Navigation.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import { Car, User, LogOut } from "lucide-react";
@@ -47,7 +48,10 @@ const Navigation = () => {
                     Inventory
                   </Link>
                 )}
-                <div className="flex items-center space-x-2 text-sm">
+                <Link
+                  to="/user/profile"
+                  className="flex items-center space-x-2 hover:text-blue-400 transition"
+                >
                   <User className="w-4 h-4" />
                   <span>{user?.username}</span>
                   {user?.role !== "user" && (
@@ -55,7 +59,7 @@ const Navigation = () => {
                       {user?.role}
                     </span>
                   )}
-                </div>
+                </Link>
                 <button
                   onClick={logout}
                   className="flex items-center space-x-1 hover:text-blue-400 transition"

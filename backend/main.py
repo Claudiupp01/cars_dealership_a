@@ -372,6 +372,162 @@ def delete_user(
     
     return {"success": True, "message": f"User {username} deleted successfully"}
 
+# ============= USER ENDPOINTS =============
+
+class FavoriteCreate(BaseModel):
+    car_id: int
+
+class TestDriveCreate(BaseModel):
+    car_id: int
+    preferred_date: str
+    preferred_time: str
+    phone: str
+    message: str = ""
+
+class ContactInquiryCreate(BaseModel):
+    name: str
+    email: str
+    phone: str = ""
+    subject: str = ""
+    message: str
+
+@app.get("/api/user/favorites")
+def get_user_favorites(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Get current user's favorite cars"""
+    favorites = db.query(models.Favorite).filter(
+        models.Favorite.user_id == current_user.id
+    ).all()
+    
+    result = []
+    for fav in favorites:
+        car = db.query(models.Car).filter(models.Car.id == fav.car_id).first()
+        if car:
+            result.append({
+                "favorite_id": fav.id,
+                "car": car.to_dict(),
+                "added_at": fav.created_at.isoformat() if fav.created_at else None
+            })
+    
+    return result
+
+@app.post("/api/user/favorites")
+def add_favorite(
+    favorite: FavoriteCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Add a car to favorites"""
+    existing = db.query(models.Favorite).filter(
+        models.Favorite.user_id == current_user.id,
+        models.Favorite.car_id == favorite.car_id
+    ).first()
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Car already in favorites")
+    
+    car = db.query(models.Car).filter(models.Car.id == favorite.car_id).first()
+    if not car:
+        raise HTTPException(status_code=404, detail="Car not found")
+    
+    new_favorite = models.Favorite(
+        user_id=current_user.id,
+        car_id=favorite.car_id
+    )
+    
+    db.add(new_favorite)
+    db.commit()
+    db.refresh(new_favorite)
+    
+    return {"success": True, "message": "Car added to favorites"}
+
+@app.delete("/api/user/favorites/{car_id}")
+def remove_favorite(
+    car_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Remove a car from favorites"""
+    favorite = db.query(models.Favorite).filter(
+        models.Favorite.user_id == current_user.id,
+        models.Favorite.car_id == car_id
+    ).first()
+    
+    if not favorite:
+        raise HTTPException(status_code=404, detail="Favorite not found")
+    
+    db.delete(favorite)
+    db.commit()
+    
+    return {"success": True, "message": "Car removed from favorites"}
+
+@app.get("/api/user/test-drives")
+def get_user_test_drives(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Get current user's test drive requests"""
+    test_drives = db.query(models.TestDrive).filter(
+        models.TestDrive.user_id == current_user.id
+    ).order_by(models.TestDrive.created_at.desc()).all()
+    
+    result = []
+    for td in test_drives:
+        car = db.query(models.Car).filter(models.Car.id == td.car_id).first()
+        if car:
+            result.append({
+                **td.to_dict(),
+                "car": car.to_dict()
+            })
+    
+    return result
+
+@app.post("/api/user/test-drives")
+def request_test_drive(
+    test_drive: TestDriveCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Request a test drive"""
+    car = db.query(models.Car).filter(models.Car.id == test_drive.car_id).first()
+    if not car:
+        raise HTTPException(status_code=404, detail="Car not found")
+    
+    new_test_drive = models.TestDrive(
+        user_id=current_user.id,
+        car_id=test_drive.car_id,
+        preferred_date=test_drive.preferred_date,
+        preferred_time=test_drive.preferred_time,
+        phone=test_drive.phone,
+        message=test_drive.message,
+        status='pending'
+    )
+    
+    db.add(new_test_drive)
+    db.commit()
+    db.refresh(new_test_drive)
+    
+    return {"success": True, "message": "Test drive request submitted successfully"}
+
+@app.post("/api/contact")
+def submit_contact_inquiry(inquiry: ContactInquiryCreate, db: Session = Depends(get_db)):
+    """Submit a contact inquiry"""
+    new_inquiry = models.ContactInquiry(
+        user_id=None,
+        name=inquiry.name,
+        email=inquiry.email,
+        phone=inquiry.phone,
+        subject=inquiry.subject,
+        message=inquiry.message
+    )
+    
+    db.add(new_inquiry)
+    db.commit()
+    
+    return {"success": True, "message": "Your message has been sent. We'll get back to you soon!"}
+
 if __name__ == "__main__":
     import uvicorn
     print("\n" + "=" * 50)

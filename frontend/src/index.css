@@ -14,3 +14,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Add at the bottom of index.css */
+.fixed {
+  position: fixed !important;
+  z-index: 9999 !important;
+}

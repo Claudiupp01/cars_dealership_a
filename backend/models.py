@@ -1,6 +1,6 @@
-# backend/models.py
-from sqlalchemy import Column, Integer, String, Boolean, Float, Text
+from sqlalchemy import Column, Integer, String, Boolean, Float, Text, DateTime, ForeignKey
 from database import Base
+from sqlalchemy.orm import relationship
 
 class Car(Base):
     """
@@ -74,5 +74,74 @@ class User(Base):
             "full_name": self.full_name,
             "role": self.role,  # Already a string now
             "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+    
+class Favorite(Base):
+    """User's favorite cars"""
+    __tablename__ = "favorites"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    car_id = Column(Integer, ForeignKey('cars.id', ondelete='CASCADE'), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "car_id": self.car_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+class TestDrive(Base):
+    """Test drive requests"""
+    __tablename__ = "test_drives"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    car_id = Column(Integer, ForeignKey('cars.id', ondelete='CASCADE'), nullable=False)
+    preferred_date = Column(String(100))
+    preferred_time = Column(String(100))
+    phone = Column(String(50))
+    message = Column(Text)
+    status = Column(String(50), default='pending')  # pending, approved, completed, cancelled
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "car_id": self.car_id,
+            "preferred_date": self.preferred_date,
+            "preferred_time": self.preferred_time,
+            "phone": self.phone,
+            "message": self.message,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+class ContactInquiry(Base):
+    """Contact form submissions"""
+    __tablename__ = "contact_inquiries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False)
+    phone = Column(String(50))
+    subject = Column(String(255))
+    message = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "name": self.name,
+            "email": self.email,
+            "phone": self.phone,
+            "subject": self.subject,
+            "message": self.message,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }

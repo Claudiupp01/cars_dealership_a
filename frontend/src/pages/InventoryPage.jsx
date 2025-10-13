@@ -1,14 +1,62 @@
+// frontend/src/pages/InventoryPage.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllCars } from "../services/api";
+import { Heart } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  getAllCars,
+  getFavorites,
+  addFavorite,
+  removeFavorite,
+} from "../services/api";
 
 const InventoryPage = () => {
   const [cars, setCars] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    getAllCars().then((data) => setCars(data));
-  }, []);
+    loadCars();
+    if (isAuthenticated) {
+      loadFavorites();
+    }
+  }, [isAuthenticated]);
+
+  const loadCars = async () => {
+    const data = await getAllCars();
+    setCars(data);
+  };
+
+  const loadFavorites = async () => {
+    try {
+      const data = await getFavorites();
+      setFavorites(data.map((fav) => fav.car.id));
+    } catch (error) {
+      console.error("Error loading favorites:", error);
+    }
+  };
+
+  const handleFavoriteToggle = async (e, carId) => {
+    e.stopPropagation(); // Prevent navigation to car details
+
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      if (favorites.includes(carId)) {
+        await removeFavorite(carId);
+        setFavorites(favorites.filter((id) => id !== carId));
+      } else {
+        await addFavorite(carId);
+        setFavorites([...favorites, carId]);
+      }
+    } catch (error) {
+      alert(error.message);
+    }
+  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("en-US", {
@@ -30,7 +78,7 @@ const InventoryPage = () => {
           {cars.map((car) => (
             <div
               key={car.id}
-              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition cursor-pointer"
+              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition cursor-pointer relative"
               onClick={() => navigate(`/car/${car.id}`)}
             >
               <div className="relative h-48 overflow-hidden">
@@ -39,6 +87,19 @@ const InventoryPage = () => {
                   alt={car.name}
                   className="w-full h-full object-cover hover:scale-110 transition duration-500"
                 />
+                {/* Favorite Button */}
+                <button
+                  onClick={(e) => handleFavoriteToggle(e, car.id)}
+                  className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-lg hover:bg-red-50 transition z-10"
+                >
+                  <Heart
+                    className={`w-6 h-6 ${
+                      favorites.includes(car.id)
+                        ? "fill-red-500 text-red-500"
+                        : "text-slate-400"
+                    }`}
+                  />
+                </button>
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-2">
