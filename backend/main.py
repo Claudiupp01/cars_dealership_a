@@ -317,6 +317,8 @@ def seed_database(db: Session = Depends(get_db)):
     
     return {"message": f"Added {len(sample_cars)} cars to database"}
 
+# ============= ADMIN ENDPOINTS =============
+
 class RoleUpdate(BaseModel):
     role: str
 
@@ -349,6 +351,26 @@ def get_all_users(
     """Get all users (Admin only)"""
     users = db.query(models.User).all()
     return [user.to_dict() for user in users]
+
+@app.delete("/api/admin/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_admin)
+):
+    """Delete a user (Admin only)"""
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="You cannot delete yourself")
+    
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    username = user.username
+    db.delete(user)
+    db.commit()
+    
+    return {"success": True, "message": f"User {username} deleted successfully"}
 
 if __name__ == "__main__":
     import uvicorn

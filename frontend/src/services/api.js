@@ -96,3 +96,61 @@ export const deleteCar = async (id) => {
 
   return await response.json();
 };
+
+export const getAllUsers = async () => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/admin/users`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to fetch users");
+  }
+
+  return await response.json();
+};
+
+export const updateUserRole = async (userId, newRole) => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/role`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ role: newRole }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to update user role");
+  }
+
+  return await response.json();
+};
+
+export const deleteUser = async (userId) => {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to delete user");
+  }
+
+  return await response.json();
+};

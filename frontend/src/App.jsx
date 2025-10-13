@@ -14,6 +14,9 @@ import RegisterPage from "./pages/RegisterPage";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import CarForm from "./pages/CarForm";
 
+import AdminDashboard from "./pages/AdminDashboard";
+import UserManagement from "./pages/UserManagement";
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -31,6 +34,8 @@ const App = () => {
             <Route path="/owner/dashboard" element={<OwnerDashboard />} />
             <Route path="/owner/cars/new" element={<CarForm />} />
             <Route path="/owner/cars/edit/:id" element={<CarForm />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<UserManagement />} />
           </Routes>
           <Footer />
         </div>

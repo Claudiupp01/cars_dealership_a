@@ -31,12 +31,20 @@ const Navigation = () => {
 
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
+                {user?.role === "admin" && (
+                  <Link
+                    to="/admin/dashboard"
+                    className="hover:text-blue-400 transition"
+                  >
+                    Admin
+                  </Link>
+                )}
                 {(user?.role === "owner" || user?.role === "admin") && (
                   <Link
                     to="/owner/dashboard"
                     className="hover:text-blue-400 transition"
                   >
-                    Dashboard
+                    Inventory
                   </Link>
                 )}
                 <div className="flex items-center space-x-2 text-sm">
