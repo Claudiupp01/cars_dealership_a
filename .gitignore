@@ -1,1 +1,43 @@
+# Database backups (add this to your .gitignore)
+backups/
+backup_*.sql
+*.backup
+*.dump
+backend/database_backups
+
+# Keep the main backup.sql for repository sharing
+!backup.sql
+
+# Environment files (sensitive)
 .env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Node
+node_modules/
+.npm
+.pnpm-debug.log*
+dist/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+postgres-data/
