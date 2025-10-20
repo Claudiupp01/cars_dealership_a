@@ -16,12 +16,15 @@ const InventoryPage = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  // Check if user can favorite cars (only regular users)
+  const canFavorite = isAuthenticated && user?.role === "user";
+
   useEffect(() => {
     loadCars();
-    if (isAuthenticated) {
+    if (canFavorite) {
       loadFavorites();
     }
-  }, [isAuthenticated]);
+  }, [canFavorite]);
 
   const loadCars = async () => {
     const data = await getAllCars();
@@ -38,10 +41,16 @@ const InventoryPage = () => {
   };
 
   const handleFavoriteToggle = async (e, carId) => {
-    e.stopPropagation(); // Prevent navigation to car details
+    e.stopPropagation();
 
     if (!isAuthenticated) {
       navigate("/login");
+      return;
+    }
+
+    // Only regular users can favorite
+    if (user?.role !== "user") {
+      alert("Only customers can save favorite cars");
       return;
     }
 
@@ -87,19 +96,21 @@ const InventoryPage = () => {
                   alt={car.name}
                   className="w-full h-full object-cover hover:scale-110 transition duration-500"
                 />
-                {/* Favorite Button */}
-                <button
-                  onClick={(e) => handleFavoriteToggle(e, car.id)}
-                  className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-lg hover:bg-red-50 transition z-10"
-                >
-                  <Heart
-                    className={`w-6 h-6 ${
-                      favorites.includes(car.id)
-                        ? "fill-red-500 text-red-500"
-                        : "text-slate-400"
-                    }`}
-                  />
-                </button>
+                {/* Only show favorite button for regular users */}
+                {canFavorite && (
+                  <button
+                    onClick={(e) => handleFavoriteToggle(e, car.id)}
+                    className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-lg hover:bg-red-50 transition z-10"
+                  >
+                    <Heart
+                      className={`w-6 h-6 ${
+                        favorites.includes(car.id)
+                          ? "fill-red-500 text-red-500"
+                          : "text-slate-400"
+                      }`}
+                    />
+                  </button>
+                )}
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-2">

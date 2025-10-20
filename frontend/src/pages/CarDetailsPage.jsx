@@ -1,3 +1,4 @@
+// frontend/src/pages/CarDetailsPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronRight, Heart, Calendar, X } from "lucide-react";
@@ -13,10 +14,14 @@ import {
 const CarDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [car, setCar] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  // Define these variables INSIDE the component
+  const canFavorite = isAuthenticated && user?.role === "user";
+  const canRequestTestDrive = isAuthenticated && user?.role === "user";
 
   useEffect(() => {
     loadCar();
@@ -47,6 +52,12 @@ const CarDetailsPage = () => {
       navigate("/login");
       return;
     }
+
+    if (user?.role !== "user") {
+      alert("Only customers can save favorite cars");
+      return;
+    }
+
     try {
       if (isFavorite) {
         await removeFavorite(parseInt(id));
@@ -66,6 +77,12 @@ const CarDetailsPage = () => {
       navigate("/login");
       return;
     }
+
+    if (user?.role !== "user") {
+      alert("Only customers can request test drives");
+      return;
+    }
+
     setShowModal(true);
   };
 
@@ -97,16 +114,18 @@ const CarDetailsPage = () => {
               alt={car.name}
               className="w-full h-96 object-cover rounded-xl shadow-lg"
             />
-            <button
-              onClick={toggleFavorite}
-              className="absolute top-4 right-4 bg-white p-3 rounded-full shadow-lg hover:shadow-xl transition"
-            >
-              <Heart
-                className={`w-7 h-7 ${
-                  isFavorite ? "fill-red-500 text-red-500" : "text-slate-400"
-                }`}
-              />
-            </button>
+            {canFavorite && (
+              <button
+                onClick={toggleFavorite}
+                className="absolute top-4 right-4 bg-white p-3 rounded-full shadow-lg hover:shadow-xl transition"
+              >
+                <Heart
+                  className={`w-7 h-7 ${
+                    isFavorite ? "fill-red-500 text-red-500" : "text-slate-400"
+                  }`}
+                />
+              </button>
+            )}
           </div>
 
           <div>
@@ -148,26 +167,38 @@ const CarDetailsPage = () => {
             </div>
 
             <div className="flex space-x-4">
-              <button
-                onClick={openTestDriveModal}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2"
-              >
-                <Calendar className="w-5 h-5" />
-                <span>Schedule Test Drive</span>
-              </button>
-              <button
-                onClick={toggleFavorite}
-                className={`px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2 ${
-                  isFavorite
-                    ? "bg-red-600 hover:bg-red-700 text-white"
-                    : "bg-slate-200 hover:bg-slate-300 text-slate-900"
-                }`}
-              >
-                <Heart
-                  className={`w-5 h-5 ${isFavorite ? "fill-current" : ""}`}
-                />
-                <span>{isFavorite ? "Saved" : "Save"}</span>
-              </button>
+              {canRequestTestDrive && (
+                <button
+                  onClick={openTestDriveModal}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2"
+                >
+                  <Calendar className="w-5 h-5" />
+                  <span>Schedule Test Drive</span>
+                </button>
+              )}
+              {canFavorite && (
+                <button
+                  onClick={toggleFavorite}
+                  className={`px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2 ${
+                    isFavorite
+                      ? "bg-red-600 hover:bg-red-700 text-white"
+                      : "bg-slate-200 hover:bg-slate-300 text-slate-900"
+                  }`}
+                >
+                  <Heart
+                    className={`w-5 h-5 ${isFavorite ? "fill-current" : ""}`}
+                  />
+                  <span>{isFavorite ? "Saved" : "Save"}</span>
+                </button>
+              )}
+              {!canFavorite && !canRequestTestDrive && (
+                <button
+                  onClick={() => navigate("/contact")}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
+                >
+                  Contact Us
+                </button>
+              )}
             </div>
           </div>
         </div>

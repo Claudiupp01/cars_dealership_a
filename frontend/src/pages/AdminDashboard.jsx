@@ -1,18 +1,38 @@
-// frontend/src/pages/AdminDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Users, Car, Shield, Search } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    if (!user || user.role !== "admin") {
-      navigate("/");
+    // Check authentication and role
+    if (!isAuthenticated || !user) {
+      navigate("/", { replace: true });
+      return;
     }
-  }, [user, navigate]);
+
+    if (user.role !== "admin") {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    setIsChecking(false);
+  }, [user, isAuthenticated, navigate]);
+
+  // Show loading while checking auth
+  if (isChecking || !user) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="text-center">
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">

@@ -13,18 +13,30 @@ import {
 const HomePage = () => {
   const [cars, setCars] = useState([]);
   const [favorites, setFavorites] = useState([]);
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    getAllCars().then((data) => {
-      setCars(data.filter((car) => car.featured));
-    });
+  // Define canFavorite here, inside the component
+  const canFavorite = isAuthenticated && user?.role === "user";
 
-    if (isAuthenticated) {
+  useEffect(() => {
+    loadCars();
+  }, []);
+
+  useEffect(() => {
+    if (canFavorite) {
       loadFavorites();
     }
-  }, [isAuthenticated]);
+  }, [canFavorite]);
+
+  const loadCars = async () => {
+    try {
+      const data = await getAllCars();
+      setCars(data.filter((car) => car.featured));
+    } catch (error) {
+      console.error("Error loading cars:", error);
+    }
+  };
 
   const loadFavorites = async () => {
     try {
@@ -40,6 +52,11 @@ const HomePage = () => {
 
     if (!isAuthenticated) {
       navigate("/login");
+      return;
+    }
+
+    if (user?.role !== "user") {
+      alert("Only customers can save favorite cars");
       return;
     }
 
@@ -121,19 +138,21 @@ const HomePage = () => {
                     Featured
                   </div>
 
-                  {/* Favorite Button */}
-                  <button
-                    onClick={(e) => handleFavoriteToggle(e, car.id)}
-                    className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-lg hover:bg-red-50 transition z-10"
-                  >
-                    <Heart
-                      className={`w-6 h-6 ${
-                        favorites.includes(car.id)
-                          ? "fill-red-500 text-red-500"
-                          : "text-slate-400"
-                      }`}
-                    />
-                  </button>
+                  {/* Favorite Button - Only show for regular users */}
+                  {canFavorite && (
+                    <button
+                      onClick={(e) => handleFavoriteToggle(e, car.id)}
+                      className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-lg hover:bg-red-50 transition z-10"
+                    >
+                      <Heart
+                        className={`w-6 h-6 ${
+                          favorites.includes(car.id)
+                            ? "fill-red-500 text-red-500"
+                            : "text-slate-400"
+                        }`}
+                      />
+                    </button>
+                  )}
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-slate-900 mb-2">

@@ -1,11 +1,23 @@
-// frontend/src/components/Navigation.jsx
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Car, User, LogOut } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const Navigation = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLogout = () => {
+    // Logout first
+    logout();
+
+    // Redirect to home page
+    navigate("/", { replace: true });
+
+    // Optional: Show a toast or alert
+    // alert("Logged out successfully");
+  };
 
   return (
     <nav className="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
@@ -30,9 +42,9 @@ const Navigation = () => {
               Contact
             </Link>
 
-            {isAuthenticated ? (
+            {isAuthenticated && user ? (
               <div className="flex items-center space-x-4">
-                {user?.role === "admin" && (
+                {user.role === "admin" && (
                   <Link
                     to="/admin/dashboard"
                     className="hover:text-blue-400 transition"
@@ -40,28 +52,36 @@ const Navigation = () => {
                     Admin
                   </Link>
                 )}
-                {(user?.role === "owner" || user?.role === "admin") && (
+                {(user.role === "owner" || user.role === "admin") && (
                   <Link
                     to="/owner/dashboard"
                     className="hover:text-blue-400 transition"
                   >
-                    Inventory
+                    Dashboard
                   </Link>
                 )}
-                <Link
-                  to="/user/profile"
-                  className="flex items-center space-x-2 hover:text-blue-400 transition"
-                >
-                  <User className="w-4 h-4" />
-                  <span>{user?.username}</span>
-                  {user?.role !== "user" && (
+                {/* Only show profile for regular users */}
+                {user.role === "user" && (
+                  <Link
+                    to="/user/profile"
+                    className="flex items-center space-x-2 hover:text-blue-400 transition"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>{user.username}</span>
+                  </Link>
+                )}
+                {/* Show username for owners/admins without profile link */}
+                {(user.role === "owner" || user.role === "admin") && (
+                  <div className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>{user.username}</span>
                     <span className="bg-blue-600 px-2 py-1 rounded text-xs">
-                      {user?.role}
+                      {user.role}
                     </span>
-                  )}
-                </Link>
+                  </div>
+                )}
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="flex items-center space-x-1 hover:text-blue-400 transition"
                 >
                   <LogOut className="w-4 h-4" />

@@ -1,4 +1,4 @@
-// frontend/src/pages/UserManagement.jsx
+// frontend/src/pages/UserManagement.jsx - COMPLETE FIXED VERSION
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -18,16 +18,25 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [loading, setLoading] = useState(true);
-  const { user: currentUser } = useAuth();
+  const [isChecking, setIsChecking] = useState(true);
+  const { user: currentUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!currentUser || currentUser.role !== "admin") {
-      navigate("/");
+    // Check authentication and role
+    if (!isAuthenticated || !currentUser) {
+      navigate("/", { replace: true });
       return;
     }
+
+    if (currentUser.role !== "admin") {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    setIsChecking(false);
     loadUsers();
-  }, [currentUser, navigate]);
+  }, [currentUser, isAuthenticated, navigate]);
 
   useEffect(() => {
     filterUsers();
@@ -48,12 +57,10 @@ const UserManagement = () => {
   const filterUsers = () => {
     let filtered = [...users];
 
-    // Filter by role
     if (roleFilter !== "all") {
       filtered = filtered.filter((u) => u.role === roleFilter);
     }
 
-    // Filter by search term (name, username, or email)
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -135,8 +142,25 @@ const UserManagement = () => {
     }
   };
 
+  // Show loading while checking auth
+  if (isChecking || !currentUser) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="text-center">
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
-    return <div className="max-w-7xl mx-auto px-4 py-12">Loading users...</div>;
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="text-center">
+          <p className="text-slate-600">Loading users...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

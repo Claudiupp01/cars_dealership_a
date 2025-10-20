@@ -1,4 +1,3 @@
-// frontend/src/pages/OwnerDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Edit, Trash2, Car } from "lucide-react";
@@ -8,21 +7,34 @@ import { getAllCars, deleteCar } from "../services/api";
 const OwnerDashboard = () => {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const [isChecking, setIsChecking] = useState(true);
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user || (user.role !== "owner" && user.role !== "admin")) {
-      navigate("/");
+    // Check authentication and role
+    if (!isAuthenticated || !user) {
+      navigate("/", { replace: true });
       return;
     }
+
+    if (user.role !== "owner" && user.role !== "admin") {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    setIsChecking(false);
     loadCars();
-  }, [user, navigate]);
+  }, [user, isAuthenticated, navigate]);
 
   const loadCars = async () => {
     setLoading(true);
-    const data = await getAllCars();
-    setCars(data);
+    try {
+      const data = await getAllCars();
+      setCars(data);
+    } catch (error) {
+      console.error("Error loading cars:", error);
+    }
     setLoading(false);
   };
 
@@ -48,8 +60,25 @@ const OwnerDashboard = () => {
     }).format(price);
   };
 
+  // Show loading while checking auth
+  if (isChecking || !user) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="text-center">
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
-    return <div className="max-w-7xl mx-auto px-4 py-12">Loading...</div>;
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="text-center">
+          <p className="text-slate-600">Loading cars...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
