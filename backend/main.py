@@ -148,6 +148,7 @@ class CarCreate(BaseModel):
     featured: bool = False
     description: str
     specs: CarSpecs
+    color: str = None  # NEW: Add color field (optional)
 
 class CarResponse(BaseModel):
     id: int
@@ -196,7 +197,8 @@ def create_car(
         description=car.description,
         engine=car.specs.engine,
         transmission=car.specs.transmission,
-        fuel=car.specs.fuel
+        fuel=car.specs.fuel,
+        color=car.color  # NEW: Add color
     )
     
     db.add(db_car)
@@ -241,6 +243,7 @@ def update_car(
     db_car.engine = car.specs.engine
     db_car.transmission = car.specs.transmission
     db_car.fuel = car.specs.fuel
+    db_car.color = car.color  # NEW: Update color
     
     db.commit()
     db.refresh(db_car)
@@ -281,7 +284,8 @@ def seed_database(db: Session = Depends(get_db)):
             "description": "Luxury sedan with cutting-edge technology and comfort",
             "engine": "3.0L V6",
             "transmission": "Automatic",
-            "fuel": "Gasoline"
+            "fuel": "Gasoline",
+            "color": "Black"  # NEW
         },
         {
             "name": "BMW M4 Competition",
@@ -293,7 +297,8 @@ def seed_database(db: Session = Depends(get_db)):
             "description": "High-performance sports coupe with racing DNA",
             "engine": "3.0L Twin-Turbo I6",
             "transmission": "Automatic",
-            "fuel": "Gasoline"
+            "fuel": "Gasoline",
+            "color": "Blue"  # NEW
         },
         {
             "name": "Porsche 911 Carrera",
@@ -305,7 +310,47 @@ def seed_database(db: Session = Depends(get_db)):
             "description": "Iconic sports car with timeless design",
             "engine": "3.0L Twin-Turbo Flat-6",
             "transmission": "PDK",
-            "fuel": "Gasoline"
+            "fuel": "Gasoline",
+            "color": "Silver"  # NEW
+        },
+        {
+            "name": "Tesla Model S Plaid",
+            "price": 89000,
+            "year": 2023,
+            "mileage": 6000,
+            "image": "https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&h=600&fit=crop",
+            "featured": False,
+            "description": "Fastest accelerating production car with autopilot",
+            "engine": "Electric Tri-Motor",
+            "transmission": "Single-Speed",
+            "fuel": "Electric",
+            "color": "White"  # NEW
+        },
+        {
+            "name": "Audi e-tron GT",
+            "price": 105000,
+            "year": 2023,
+            "mileage": 2000,
+            "image": "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800&h=600&fit=crop",
+            "featured": True,
+            "description": "Electric gran turismo combining performance and sustainability",
+            "engine": "Electric Twin Motor",
+            "transmission": "Single-Speed",
+            "fuel": "Electric",
+            "color": "Gray"  # NEW
+        },
+        {
+            "name": "Range Rover Sport",
+            "price": 92000,
+            "year": 2023,
+            "mileage": 7000,
+            "image": "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&h=600&fit=crop",
+            "featured": False,
+            "description": "Luxury SUV with exceptional off-road capability",
+            "engine": "3.0L Supercharged V6",
+            "transmission": "Automatic",
+            "fuel": "Gasoline",
+            "color": "Green"  # NEW
         }
     ]
     

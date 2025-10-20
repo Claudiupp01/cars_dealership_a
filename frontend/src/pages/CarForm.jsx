@@ -1,4 +1,4 @@
-// frontend/src/pages/CarForm.jsx
+// frontend/src/pages/CarForm.jsx - ENHANCED VERSION
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -22,9 +22,28 @@ const CarForm = () => {
     engine: "",
     transmission: "",
     fuel: "",
+    color: "", // NEW: Color field
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Popular car colors
+  const popularColors = [
+    "Black",
+    "White",
+    "Silver",
+    "Gray",
+    "Blue",
+    "Red",
+    "Green",
+    "Yellow",
+    "Orange",
+    "Brown",
+    "Beige",
+    "Gold",
+    "Purple",
+    "Pink",
+  ];
 
   useEffect(() => {
     if (!user || (user.role !== "owner" && user.role !== "admin")) {
@@ -51,6 +70,7 @@ const CarForm = () => {
         engine: car.specs.engine,
         transmission: car.specs.transmission,
         fuel: car.specs.fuel,
+        color: car.color || "", // NEW: Load color
       });
     } catch (err) {
       setError("Failed to load car details");
@@ -79,6 +99,7 @@ const CarForm = () => {
         image: formData.image,
         featured: formData.featured,
         description: formData.description,
+        color: formData.color || null, // NEW: Include color
         specs: {
           engine: formData.engine,
           transmission: formData.transmission,
@@ -242,6 +263,29 @@ const CarForm = () => {
               </select>
             </div>
 
+            {/* NEW: Color field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Color
+              </label>
+              <select
+                name="color"
+                value={formData.color}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+              >
+                <option value="">Select color (optional)</option>
+                {popularColors.map((color) => (
+                  <option key={color} value={color}>
+                    {color}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 mt-1">
+                Optional - helps buyers filter by color
+              </p>
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Image URL *
@@ -260,6 +304,9 @@ const CarForm = () => {
                   src={formData.image}
                   alt="Preview"
                   className="mt-2 w-32 h-32 object-cover rounded"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                  }}
                 />
               )}
             </div>

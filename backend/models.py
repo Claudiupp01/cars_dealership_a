@@ -1,33 +1,39 @@
+# backend/models.py - ENHANCED VERSION
 from sqlalchemy import Column, Integer, String, Boolean, Float, Text, DateTime, ForeignKey
 from database import Base
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 class Car(Base):
     """
-    This class represents the 'cars' table in the database.
-    Each attribute becomes a column in the table.
+    Enhanced Car model with color field
     """
-    __tablename__ = "cars"  # Name of the table in database
+    __tablename__ = "cars"
 
-    # Columns
-    id = Column(Integer, primary_key=True, index=True)  # Auto-incrementing ID
-    name = Column(String(255), nullable=False)  # Car name (required)
-    price = Column(Integer, nullable=False)  # Price in dollars
-    year = Column(Integer, nullable=False)  # Manufacturing year
-    mileage = Column(Integer, nullable=False)  # Miles driven
-    image = Column(String(500))  # URL to car image
-    featured = Column(Boolean, default=False)  # Is this a featured car?
-    description = Column(Text)  # Long description
+    # Existing columns
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    price = Column(Integer, nullable=False)
+    year = Column(Integer, nullable=False)
+    mileage = Column(Integer, nullable=False)
+    image = Column(String(500))
+    featured = Column(Boolean, default=False)
+    description = Column(Text)
     
-    # Specifications stored as separate columns
-    engine = Column(String(100))  # Engine type
-    transmission = Column(String(100))  # Transmission type
-    fuel = Column(String(50))  # Fuel type
+    # Specifications
+    engine = Column(String(100))
+    transmission = Column(String(100))
+    fuel = Column(String(50))
+    
+    # NEW: Color field
+    color = Column(String(50), nullable=True)  # e.g., "Black", "White", "Silver"
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
         """
         Converts the database object to a dictionary
-        This makes it easy to send as JSON to the frontend
         """
         return {
             "id": self.id,
@@ -38,19 +44,16 @@ class Car(Base):
             "image": self.image,
             "featured": self.featured,
             "description": self.description,
+            "color": self.color,  # NEW: Include color in response
             "specs": {
                 "engine": self.engine,
                 "transmission": self.transmission,
                 "fuel": self.fuel
-            }
+            },
+            "created_at": self.created_at.isoformat() if self.created_at else None
         }
-    
-# backend/models.py
-from sqlalchemy import Column, Integer, String, Boolean, Float, Text, DateTime
-from database import Base
-from datetime import datetime
 
-# Keep your existing Car model...
+# Keep all your other models (User, Favorite, TestDrive, ContactInquiry) as they are
 
 class User(Base):
     """User model for authentication"""
@@ -61,18 +64,17 @@ class User(Base):
     username = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255))
-    role = Column(String(50), default='user', nullable=False)  # Changed from Enum to String
+    role = Column(String(50), default='user', nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """Convert user to dictionary (without password)"""
         return {
             "id": self.id,
             "email": self.email,
             "username": self.username,
             "full_name": self.full_name,
-            "role": self.role,  # Already a string now
+            "role": self.role,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
@@ -105,7 +107,7 @@ class TestDrive(Base):
     preferred_time = Column(String(100))
     phone = Column(String(50))
     message = Column(Text)
-    status = Column(String(50), default='pending')  # pending, approved, completed, cancelled
+    status = Column(String(50), default='pending')
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
