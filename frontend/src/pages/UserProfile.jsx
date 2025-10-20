@@ -1,5 +1,5 @@
-// frontend/src/pages/UserProfile.jsx
-import React from "react";
+// frontend/src/pages/UserProfile.jsx - WITH DEBUG
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Mail, Calendar, Shield } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -8,10 +8,51 @@ const UserProfile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Debug: Log user object
+  useEffect(() => {
+    console.log("UserProfile - Full user object:", user);
+    console.log("UserProfile - created_at value:", user?.created_at);
+    console.log("UserProfile - created_at type:", typeof user?.created_at);
+  }, [user]);
+
   if (!user) {
     navigate("/login");
     return null;
   }
+
+  // Format date properly
+  const formatDate = (dateString) => {
+    console.log("formatDate input:", dateString); // Debug
+
+    if (!dateString) {
+      console.log("No dateString provided");
+      return "Unknown";
+    }
+
+    try {
+      const date = new Date(dateString);
+      console.log("Parsed date:", date); // Debug
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.log("Invalid date");
+        return "Unknown";
+      }
+
+      // Format as: January 15, 2025
+      const formatted = date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      console.log("Formatted date:", formatted); // Debug
+      return formatted;
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Unknown";
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -55,7 +96,11 @@ const UserProfile = () => {
             <div>
               <div className="text-sm text-slate-500">Member Since</div>
               <div className="font-semibold text-slate-900">
-                {new Date(user.created_at).toLocaleDateString()}
+                {formatDate(user.created_at)}
+              </div>
+              {/* Debug info - remove this after fixing */}
+              <div className="text-xs text-red-500 mt-1">
+                Raw: {user.created_at || "NO VALUE"}
               </div>
             </div>
           </div>
@@ -66,6 +111,11 @@ const UserProfile = () => {
               <div className="text-sm text-slate-500">Account Status</div>
               <div className="font-semibold text-green-600">
                 {user.is_active ? "Active" : "Inactive"}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                {user.is_active
+                  ? "Your account is enabled and in good standing"
+                  : "Your account has been disabled"}
               </div>
             </div>
           </div>

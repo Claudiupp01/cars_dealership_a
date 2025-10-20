@@ -1,4 +1,4 @@
-// frontend/src/services/auth.js
+// frontend/src/services/auth.js - WITH DEBUG
 const API_BASE_URL = "http://localhost:8000/api";
 
 export const register = async (userData) => {
@@ -28,6 +28,9 @@ export const login = async (username, password) => {
     formData.append("username", username);
     formData.append("password", password);
 
+    console.log("=== FRONTEND LOGIN DEBUG ===");
+    console.log("Sending login request...");
+
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: {
@@ -43,12 +46,24 @@ export const login = async (username, password) => {
 
     const data = await response.json();
 
+    console.log("Raw response from backend:", data);
+    console.log("User object from response:", data.user);
+    console.log("created_at from response:", data.user?.created_at);
+    console.log("created_at type:", typeof data.user?.created_at);
+
     // Store token and user info
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user", JSON.stringify(data.user));
 
+    // Verify what was stored
+    const storedUser = localStorage.getItem("user");
+    console.log("Stored in localStorage:", storedUser);
+    console.log("Parsed back:", JSON.parse(storedUser));
+    console.log("===========================");
+
     return data;
   } catch (error) {
+    console.error("Login error:", error);
     throw error;
   }
 };
@@ -60,7 +75,16 @@ export const logout = () => {
 
 export const getCurrentUser = () => {
   const userStr = localStorage.getItem("user");
-  return userStr ? JSON.parse(userStr) : null;
+  if (!userStr) return null;
+
+  try {
+    const user = JSON.parse(userStr);
+    console.log("getCurrentUser() returning:", user);
+    return user;
+  } catch (e) {
+    console.error("Error parsing user from localStorage:", e);
+    return null;
+  }
 };
 
 export const getToken = () => {

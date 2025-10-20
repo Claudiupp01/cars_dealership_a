@@ -2,7 +2,7 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import models
 from database import engine, get_db, Base, test_connection
 from pydantic import BaseModel
@@ -60,6 +60,10 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     is_active: bool
+    created_at: Optional[str] = None  # ADD THIS LINE!
+
+    class Config:
+        from_attributes = True
 
 class Token(BaseModel):
     access_token: str
@@ -115,6 +119,18 @@ def login(
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     
+    # DEBUG: Print user object
+    print(f"\n=== LOGIN DEBUG ===")
+    print(f"User object: {user}")
+    print(f"User.created_at from DB: {user.created_at}")
+    print(f"User.created_at type: {type(user.created_at)}")
+    
+    # Convert to dict
+    user_dict = user.to_dict()
+    print(f"User dict: {user_dict}")
+    print(f"created_at in dict: {user_dict.get('created_at')}")
+    print(f"===================\n")
+    
     # Create access token
     access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
@@ -122,11 +138,15 @@ def login(
         expires_delta=access_token_expires
     )
     
-    return {
+    response_data = {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": user.to_dict()
+        "user": user_dict
     }
+    
+    print(f"Response data being sent: {response_data}")
+    
+    return response_data
 
 @app.get("/api/auth/me", response_model=UserResponse)
 def get_current_user_info(current_user: models.User = Depends(auth.get_current_active_user)):
@@ -572,6 +592,127 @@ def submit_contact_inquiry(inquiry: ContactInquiryCreate, db: Session = Depends(
     db.commit()
     
     return {"success": True, "message": "Your message has been sent. We'll get back to you soon!"}
+
+# ============= OWNER TEST DRIVE MANAGEMENT =============
+
+@app.get("/api/owner/test-drives")
+def get_all_test_drives(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_owner)
+):
+    """Get all test drive requests (Owner or Admin only)"""
+    test_drives = db.query(models.TestDrive).order_by(
+        models.TestDrive.created_at.desc()
+    ).all()
+    
+    result = []
+    for td in test_drives:
+        car = db.query(models.Car).filter(models.Car.id == td.car_id).first()
+        user = db.query(models.User).filter(models.User.id == td.user_id).first()
+        
+        result.append({
+            **td.to_dict(),
+            "car": car.to_dict() if car else None,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "full_name": user.full_name,
+                "email": user.email
+            } if user else None
+        })
+    
+    return result
+
+
+class TestDriveStatusUpdate(BaseModel):
+    status: str
+
+@app.put("/api/owner/test-drives/{test_drive_id}/status")
+def update_test_drive_status(
+    test_drive_id: int,
+    status_data: TestDriveStatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_owner)
+):
+    """Update test drive status (Owner or Admin only)"""
+    
+    # Validate status
+    valid_statuses = ['pending', 'approved', 'completed', 'cancelled']
+    if status_data.status not in valid_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+        )
+    
+    # Find test drive
+    test_drive = db.query(models.TestDrive).filter(
+        models.TestDrive.id == test_drive_id
+    ).first()
+    
+    if not test_drive:
+        raise HTTPException(status_code=404, detail="Test drive not found")
+    
+    # Update status
+    test_drive.status = status_data.status
+    db.commit()
+    db.refresh(test_drive)
+    
+    return {
+        "success": True,
+        "message": f"Test drive status updated to {status_data.status}",
+        "test_drive": test_drive.to_dict()
+    }
+
+
+@app.delete("/api/owner/test-drives/{test_drive_id}")
+def delete_test_drive(
+    test_drive_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_owner)
+):
+    """Delete a test drive request (Owner or Admin only)"""
+    
+    test_drive = db.query(models.TestDrive).filter(
+        models.TestDrive.id == test_drive_id
+    ).first()
+    
+    if not test_drive:
+        raise HTTPException(status_code=404, detail="Test drive not found")
+    
+    db.delete(test_drive)
+    db.commit()
+    
+    return {"success": True, "message": "Test drive deleted successfully"}
+
+
+@app.get("/api/owner/test-drives/stats")
+def get_test_drive_stats(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_owner)
+):
+    """Get test drive statistics (Owner or Admin only)"""
+    
+    total = db.query(models.TestDrive).count()
+    pending = db.query(models.TestDrive).filter(
+        models.TestDrive.status == 'pending'
+    ).count()
+    approved = db.query(models.TestDrive).filter(
+        models.TestDrive.status == 'approved'
+    ).count()
+    completed = db.query(models.TestDrive).filter(
+        models.TestDrive.status == 'completed'
+    ).count()
+    cancelled = db.query(models.TestDrive).filter(
+        models.TestDrive.status == 'cancelled'
+    ).count()
+    
+    return {
+        "total": total,
+        "pending": pending,
+        "approved": approved,
+        "completed": completed,
+        "cancelled": cancelled
+    }
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,20 +1,70 @@
-// frontend/src/pages/LoginPage.jsx
+// frontend/src/pages/LoginPage.jsx - WITH VALIDATION
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { LogIn } from "lucide-react";
+import { LogIn, AlertCircle, CheckCircle } from "lucide-react";
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState({ username: false, password: false });
 
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // Validation functions
+  const validateUsername = (value) => {
+    // Can be either email or username
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+
+    if (!value) return "Username or email is required";
+    if (value.includes("@")) {
+      // Validate as email
+      if (!emailRegex.test(value)) {
+        return "Invalid email format (e.g., user@example.com)";
+      }
+    } else {
+      // Validate as username
+      if (!usernameRegex.test(value)) {
+        return "Username must be 3-20 characters (letters, numbers, underscore only)";
+      }
+    }
+    return "";
+  };
+
+  const validatePassword = (value) => {
+    if (!value) return "Password is required";
+    if (value.length < 3) return "Password must be at least 3 characters";
+    return "";
+  };
+
+  // Get validation state
+  const usernameError = touched.username ? validateUsername(username) : "";
+  const passwordError = touched.password ? validatePassword(password) : "";
+  const isFormValid =
+    username &&
+    password &&
+    !validateUsername(username) &&
+    !validatePassword(password);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Mark all fields as touched
+    setTouched({ username: true, password: true });
+
+    // Validate all fields
+    const usernameErr = validateUsername(username);
+    const passwordErr = validatePassword(password);
+
+    if (usernameErr || passwordErr) {
+      setError("Please fix the errors above");
+      return;
+    }
+
     setError("");
     setLoading(true);
 
@@ -26,6 +76,20 @@ const LoginPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const handleChange = (field, value) => {
+    if (field === "username") {
+      setUsername(value);
+    } else if (field === "password") {
+      setPassword(value);
+    }
+    // Clear general error when user starts typing
+    if (error) setError("");
   };
 
   return (
@@ -46,43 +110,66 @@ const LoginPage = () => {
           </p>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-              {error}
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-start">
+              <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Username/Email Field */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Email or Username
+                Email or Username *
               </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                placeholder="Enter your email or username"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => handleChange("username", e.target.value)}
+                  onBlur={() => handleBlur("username")}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition ${
+                    usernameError ? "border-red-300" : "border-slate-300"
+                  }`}
+                  placeholder="Enter your email or username"
+                />
+              </div>
+              {usernameError && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {usernameError}
+                </p>
+              )}
             </div>
 
+            {/* Password Field */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Password
+                Password *
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                placeholder="Enter your password"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => handleChange("password", e.target.value)}
+                  onBlur={() => handleBlur("password")}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition ${
+                    passwordError ? "border-red-300" : "border-slate-300"
+                  }`}
+                  placeholder="Enter your password"
+                />
+              </div>
+              {passwordError && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {passwordError}
+                </p>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !isFormValid}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in..." : "Sign In"}

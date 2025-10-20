@@ -1,16 +1,13 @@
-# backend/models.py - ENHANCED VERSION
+# backend/models.py - FIXED User model
 from sqlalchemy import Column, Integer, String, Boolean, Float, Text, DateTime, ForeignKey
 from database import Base
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
 class Car(Base):
-    """
-    Enhanced Car model with color field
-    """
+    """Enhanced Car model with color field"""
     __tablename__ = "cars"
 
-    # Existing columns
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     price = Column(Integer, nullable=False)
@@ -20,21 +17,14 @@ class Car(Base):
     featured = Column(Boolean, default=False)
     description = Column(Text)
     
-    # Specifications
     engine = Column(String(100))
     transmission = Column(String(100))
     fuel = Column(String(50))
+    color = Column(String(50), nullable=True)
     
-    # NEW: Color field
-    color = Column(String(50), nullable=True)  # e.g., "Black", "White", "Silver"
-    
-    # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Converts the database object to a dictionary
-        """
         return {
             "id": self.id,
             "name": self.name,
@@ -44,7 +34,7 @@ class Car(Base):
             "image": self.image,
             "featured": self.featured,
             "description": self.description,
-            "color": self.color,  # NEW: Include color in response
+            "color": self.color,
             "specs": {
                 "engine": self.engine,
                 "transmission": self.transmission,
@@ -53,7 +43,6 @@ class Car(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
 
-# Keep all your other models (User, Favorite, TestDrive, ContactInquiry) as they are
 
 class User(Base):
     """User model for authentication"""
@@ -66,18 +55,35 @@ class User(Base):
     full_name = Column(String(255))
     role = Column(String(50), default='user', nullable=False)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     def to_dict(self):
-        return {
+        """Convert User object to dictionary with proper error handling"""
+        print(f"DEBUG: Converting user to dict - ID: {self.id}, created_at: {self.created_at}")
+        
+        result = {
             "id": self.id,
             "email": self.email,
             "username": self.username,
             "full_name": self.full_name,
             "role": self.role,
             "is_active": self.is_active,
-            "created_at": self.created_at.isoformat() if self.created_at else None
         }
+        
+        # Handle created_at with extra debugging
+        if self.created_at:
+            try:
+                result["created_at"] = self.created_at.isoformat()
+                print(f"DEBUG: created_at converted to ISO: {result['created_at']}")
+            except Exception as e:
+                print(f"ERROR: Failed to convert created_at to ISO: {e}")
+                result["created_at"] = str(self.created_at)
+        else:
+            print("WARNING: created_at is None!")
+            result["created_at"] = None
+        
+        return result
+
     
 class Favorite(Base):
     """User's favorite cars"""
@@ -95,6 +101,7 @@ class Favorite(Base):
             "car_id": self.car_id,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
+
 
 class TestDrive(Base):
     """Test drive requests"""
@@ -122,6 +129,7 @@ class TestDrive(Base):
             "status": self.status,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
+
 
 class ContactInquiry(Base):
     """Contact form submissions"""
